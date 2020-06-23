@@ -1,0 +1,49 @@
+data("iris")
+str(iris)
+install.packages("ggplot2")
+library("ggplot2")
+qplot(Petal.Length, Petal.Width, data= iris,color = Species)
+
+#SVM
+install.packages("e1071")
+library("e1071")
+mymodel <- svm(iris$Species~. ,data=iris)
+#linear 
+# mymodel <- svm(Species~. ,data=iris, kernel = "linear")
+#polynomial
+ #mymodel <- svm(Species~. ,data=iris, kernel = "polynomial")
+#sigmoid
+mymodel <- svm(Species~. ,data=iris, kernel = "sigmoid")
+summary(mymodel)
+ plot(mymodel, data=iris,
+     Petal.Width~Petal.Length,
+     slice = list(Sepal.Width = 3, Sepal.Length= 3))
+
+# confusion Matrix and Miscalssification error 
+pred <- predict(mymodel,iris)
+tab <- table(Predicted = pred , Actual = iris$Species)
+tab  #confusion matrix 
+1-sum(diag(tab))/sum(tab) # mis classification error 
+
+
+#Tuning Hyper perameter optimization 
+set.seed(123)
+tmodel <- tune(svm, Species ~ ., data = iris,
+          ranges = list(gamma() = seq(0,1,0.1), cost = 2^(2:9)))
+# tunecontrol = tune.control(sampling = "fix")
+plot(tmodel) # Dark regions= low misclassification (better results)
+summary(tmodel) #sampling method: 10-fold cross validation 
+
+ # best model 
+bestmodel <- tmodel$best.model
+summary(bestmodel)
+
+
+pred <- predict(bestmodel,iris)
+tab <- table(Predicted = pred , Actual = iris$Species)
+tab  #confusion matrix 
+1-sum(diag(tab))/sum(tab) # mis classification error 
+
+plot(bestmodel, data=iris,
+     Petal.Width~Petal.Length,
+     slice = list(Sepal.Width = 3, Sepal.Length= 3))

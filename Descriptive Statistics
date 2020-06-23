@@ -1,0 +1,90 @@
+#Descriptive Statistics
+#problem 3
+# most common way 
+d <- students
+summary(d)
+str(d)
+boxplot(d[,1:4])
+summary(d$score)
+head(d)
+n <- d[,1:4] # same datatype 
+head(n)
+# other intuitive libraries for Descriptive statistics 
+install.packages("Hmisc")
+library("Hmisc")
+describe(d) 
+
+install.packages("pastecs")
+library("pastecs")
+stat.desc(d)
+
+
+install.packages("psych")
+library("psych")
+describe(d)
+
+install.packages("dplyr")
+library(dplyr)
+group_by(d, d$score)
+
+
+##find outliers values
+OutVals = boxplot(n)$out
+#print outliers
+OutVals
+#find outlier index position in vector
+which(n %in% OutVals)
+#Remove outlier from your dataset 
+#n[ !(n %in%OutVals) ]
+
+
+#Plotting 
+install.packages("ggpubr")
+library("ggpubr")
+# Box plot colored by groups
+boxplot(n,color ="score")
+
+
+# correlation 
+cor(n)
+corl <- cor(n)
+corl
+
+#plotting correlation 
+install.packages("corrplot")
+library("corrplot")
+#corrplot(corl, is.corr=FALSE)
+corrplot(corl, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+corrplot(corl, is.corr=FALSE)
+
+
+# PerformanceAnalytics
+install.packages("PerformanceAnalytics")
+library("PerformanceAnalytics")
+chart.Correlation(n, histogram=TRUE, pch=19)
+
+
+#PCA 
+pca= prcomp(n, scale = TRUE)
+summary(pca)
+#First two principle components (PC) explain 91% of total
+
+#cos2 values 
+var <- get_pca_var(pca)
+fviz_cos2(pca, choice = "var", axes = 1:2)
+
+#Plotting PCA
+plot(pca)
+biplot(pca, xpd= TRUE)
+#Plot of eigen-values (Scree-plot) with factoextra:
+install.packages("factoextra")
+library("factoextra")
+require(factoextra)
+fviz_eig(pca, addlabels = TRUE, choice="eigenvalue")
+fviz_pca_var(pca, col.var = "black")
+
+fviz_pca_var(pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping, not necessary here
+)

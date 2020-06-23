@@ -1,0 +1,63 @@
+s <-read.csv("/Users/avinashronanki/Downloads/data 2/dataset_1.csv")
+head(s)
+str(s)
+summary(s)
+unique(s$Survival)
+#SVM
+m <- svm(Survival~., data = s)
+summary(m)
+#Tuning Hyper parameter optimization 
+set.seed(123)
+newmodel <- tune(svm, Survival~., data = s,
+               ranges = list(epsilon = seq(0,1,0.1), cost = 2^(2:6)))
+plot(newmodel)
+summary(newmodel)
+# best model 
+bestmodel <- newmodel$best.model
+summary(bestmodel)
+#prediction
+pred <- predict(bestmodel,s)
+tab <- table(Predicted = pred , Actual = s$Survival)
+tab  #confusion matrix 
+1-sum(diag(tab))/sum(tab) # mis classification error 
+#accuracy 
+sum(diag(tab))/sum(tab)
+
+
+
+#logit model-- Analytics-2 
+s$Survival <- factor(s$Survival)
+mylogit <- glm(Survival~., data = s, family = "binomial")
+summary(mylogit)
+#confidence intervals for the coefficient estimates
+confint(mylogit)
+#Prediction 
+probabilities <- predict(mylogit, s, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "yes", "no")
+# Model accuracy
+mean(predicted.classes == s$Survival)
+
+
+
+#linear OLS
+s$Survival <- as.numeric(s$Survival)
+fitlm <- lm(s$Survival~., data=s)
+summary(fitlm)
+lpred<- predict(fitlm, s)
+lpred
+actuals_preds <- data.frame(cbind(actuals=s, predicteds=lpred)) 
+correlation_accuracy <- cor(actuals_preds)
+correlation_accuracy
+head(actuals_preds)
+
+
+
+#new data 
+newdata = data.frame(age=c(25,30,60), year=c(60,58,67), Freq=c(15,1,47))
+#SVM 
+pred <- predict(bestmodel,newdata)
+#logit 
+probabilities <- predict(mylogit, newdata, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "yes", "no")
+# Model accuracy
+mean(predicted.classes == s$Survival)

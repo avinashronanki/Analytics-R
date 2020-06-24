@@ -1,0 +1,45 @@
+#reading a file line by line 
+t <- readLines("/Users/avinashronanki/Downloads/data 2/text.txt", encoding = "UTF-8")
+require(textfeatures)
+require(textcat)
+#identifying the language 
+language <- textcat(t)
+u<-unique(language)
+u
+
+
+##Table of text features
+textfeatures(t, verbose=FALSE)
+##Table of text features without normalization
+textfeatures(t, normalize = FALSE, verbose=FALSE)
+nchar(t)
+max(nchar(t))
+
+install.packages("ngram")
+library("ngram")
+require(tm)
+require(wordcloud)
+library(syuzhet)
+
+corpus <- t
+head(get_sentences(corpus)) # sentences 
+#tokens
+token <- unique(get_tokens(corpus, pattern = "\\W"))
+head(token)
+#sentiment table 
+table(get_sentiment(corpus, method="syuzhet"))
+s <- data.frame(Word=corpus, sentiment=get_sentiment(corpus,
+                                                         method="syuzhet"))
+## delete words with score=0
+sw0 <- s[!s$sentiment==0,]
+## order
+sw0 <- sw0[order(sw0$sentiment),]
+## graph score for which word get sentiment score
+op <- par(bg="wheat")
+plot(sw0$sentiment, axes=F, ylab="Sentiment Score",
+     xlab="", type="b", col="red", lwd=2, ylim=c(-1,1))
+abline(h=0, col="darkblue")
+abline(v=1:nrow(sw0), col="darkblue", lty=2)
+axis(2)
+text(1:nrow(sw0), rep(-1, nrow(sw0)), lab=sw0$Word, srt=35, xpd=TRUE,# pos=1,
+     adj=c(1.2,1.3))

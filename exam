@@ -1,0 +1,251 @@
+
+#problem 3
+#(a)---------------------------
+#Descriptive Statistics
+# most common way to do Descriptive statistics 
+d <- read.csv("/Users/avinashronanki/Downloads/data 3/students.csv")
+summary(d)
+str(d)
+boxplot(d[,1:4])
+summary(d$score)
+head(d)
+
+# other intuitive libraries for Descriptive statistics which help in detailed 
+# -overview of individual variables 
+install.packages("Hmisc")
+library("Hmisc")
+describe(d) 
+
+install.packages("pastecs")
+library("pastecs")
+stat.desc(d)
+
+
+install.packages("psych")
+library("psych")
+describe(d)
+
+install.packages("dplyr")
+library(dplyr)
+group_by(d, d$score)
+
+##find outliers values
+OutVals = boxplot(n)$out
+#print outliers
+OutVals
+#find outlier index position in vector
+which(n %in% OutVals)
+#Remove outlier from your dataset 
+#n[ !(n %in%OutVals) ]
+# there are no outliers in the data with SD of -1 to 1
+
+#Plotting 
+install.packages("ggpubr")
+library("ggpubr")
+# Box plot colored by groups
+boxplot(n,color ="score")
+
+#(b)-----------------------------------------
+n <- d[,1:4] # same datatype 
+head(n)
+# correlation 
+cor(n)
+corl <- cor(n)
+corl
+
+#plotting correlation 
+install.packages("corrplot")
+library("corrplot")
+corrplot(corl, is.corr=FALSE)
+#shows  the correlation 
+corrplot(corl, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+
+
+# PerformanceAnalytics
+install.packages("PerformanceAnalytics")
+library("PerformanceAnalytics")
+chart.Correlation(n, histogram=TRUE, pch=19)
+
+#from the chat we can clearly see that Anxiety is not corelated with the other
+#-variables score and A_points has higher siginificane 
+
+#PCA 
+pca= prcomp(n, scale = TRUE)
+summary(pca)
+#First two principle components (PC1 and pc2) explain 91% of total
+
+#cos2 values 
+var <- get_pca_var(pca)
+fviz_cos2(pca, choice = "var", axes = 1:2)
+#all the variables have relatively same significance 
+#Plotting PCA
+plot(pca)
+biplot(pca, xpd= TRUE)
+#Plot of eigen-values (Scree-plot) with factoextra:
+install.packages("factoextra")
+library("factoextra")
+require(factoextra)
+fviz_eig(pca, addlabels = TRUE, choice="eigenvalue")
+fviz_pca_var(pca, col.var = "black")
+
+fviz_pca_var(pca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping, not necessary here
+)
+# except ANXIETY all the other variables can be group together 
+
+#****************************************************************************
+#*#problem 2 
+library(tm)
+library(textfeatures)
+library(textcat)
+library(syuzhet)
+library(wordcloud)
+#Load Data
+t <- readLines("/Users/avinashronanki/Downloads/data 3/text.txt", encoding = "UTF-8")
+#(a)-------------------------------
+#Language of text
+languages <- textcat(t)
+languages_freq <- table(unlist(languages))
+cbind.data.frame(names(languages_freq), as.integer(languages_freq))
+
+#(b)------------------------------
+#Table with text features
+t_features <- textfeatures(t, normalize=FALSE, verbose = FALSE)
+t_features[,!colSums(t_features)==0]
+
+#(c)--------------------------------------
+#Lines with most letters
+max(nchar(t))  #70
+t[which(nchar(t)==max(nchar(t)))] 
+nchar(t) # number of characters in each line 
+#max(nchar(t))
+
+
+#word cloud
+corpus <- VCorpus(VectorSource(t))
+corpus.clean <- tm_map(corpus, content_transformer(tolower))
+corpus.clean <- tm_map(corpus.clean, stripWhitespace)
+corpus.clean <- tm_map(corpus.clean,removePunctuation)
+corpus.clean <- tm_map(corpus.clean,removeNumbers)
+dtm <- DocumentTermMatrix(corpus.clean)
+inspect(dtm)
+findFreqTerms(dtm,10)
+freq <- sort(colSums(as.matrix(dtm)),decreasing = T)
+wordcloud(names(freq),freq,scale = c(5,1), max.words = 50,
+          random.order = F, colors = brewer.pal(8, "Dark2"),
+          rot.per = 0.35,use.r.layout = F)
+#(d)--------------------------------
+#sentiment analysis
+wordbag <- names(freq)
+tokens <- unique(get_tokens(wordbag, pattern = "\\W"))
+table(get_sentiment(tokens, method="syuzhet"))
+s <- data.frame(Word=tokens, sentiment=get_sentiment(tokens,
+                                                     method="syuzhet"))
+## delete words with score=0
+sw0 <- s[!s$sentiment==0,]
+## order
+sw0 <- sw0[order(sw0$sentiment),]
+## plot
+op <- par(bg="wheat")
+plot(sw0$sentiment, axes=F, ylab="Sentiment Score",
+     xlab="", type="b", col="red", lwd=2, ylim=c(-1,1))
+abline(h=0, col="darkblue")
+abline(v=1:nrow(sw0), col="darkblue", lty=2)
+axis(2)
+text(1:nrow(sw0), rep(-1, nrow(sw0)), lab=sw0$Word, srt=35, xpd=TRUE,# pos=1,
+     adj=c(1.2,1.3))
+
+#**************************************************************************************************
+#problem 1 
+#(a)-----------------------------
+s <-read.csv("/Users/avinashronanki/Downloads/data 3/dataset_1.csv")
+head(s)
+str(s)
+summary(s)
+unique(s$Survival)
+#SVM
+m <- svm(Survival~., data = s)
+summary(m)
+
+#Tuning Hyper parameter optimization 
+set.seed(123)
+newmodel <- tune(svm, Survival~., data = s,
+                 ranges = list(epsilon = seq(0,1,0.1), cost = 2^(2:6)))
+plot(newmodel)
+summary(newmodel)
+# best model 
+bestmodel <- newmodel$best.model
+summary(bestmodel)
+#prediction
+pred <- predict(bestmodel,s)
+tab <- table(Predicted = pred , Actual = s$Survival)
+tab  #confusion matrix 
+1-sum(diag(tab))/sum(tab) # mis classification error 
+#accuracy 
+sum(diag(tab))/sum(tab)
+#
+#(b)-------------------------
+#logit model-- Analytics-2 
+s$Survival <- factor(s$Survival)
+mylogit <- glm(Survival~., data = s, family = "binomial")
+summary(mylogit)
+#confidence intervals for the coefficient estimates
+confint(mylogit)
+#Prediction 
+probabilities <- predict(mylogit, s, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "yes", "no")
+# Model accuracy
+mean(predicted.classes == s$Survival)
+
+#linear OLS
+s$Survival <- as.numeric(s$Survival)
+fitlm <- lm(s$Survival~., data=s)
+summary(fitlm)
+lpred<- predict(fitlm, s)
+lpred
+actuals_preds <- data.frame(cbind(actuals=s, predicteds=lpred)) 
+correlation_accuracy <- cor(actuals_preds)
+correlation_accuracy
+head(actuals_preds)
+
+#(c)---------------------
+# svm has the accuracy of 81% and GLM has onlt 61% 
+# hence it shows SVM is better fit for it 
+
+#(d)--------------------
+#new data 
+newdata = data.frame(age=c(25,30,60), year=c(60,58,67), Freq=c(15,1,47))
+#SVM 
+# yes yes yes yes 
+pred <- predict(bestmodel,newdata)
+#logit 
+probabilities <- predict(mylogit, newdata, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "yes", "no")
+# Model accuracy
+mean(predicted.classes == s$Survival)
+#
+
+#******************************************************************************
+#problem 4 
+#(a)----------------------
+p4 <- read.csv("/Users/avinashronanki/Downloads/data 3/students.csv")
+require(nnet)
+#samp <- sample(1:nrow(d), round(nrow(d) *.75, 0))
+#train <- d[samp,]
+#test <- d[-samp,]
+## creating 6 neurons
+fit <- nnet(SCORE ~ ., size=6, data=p4, linout=T)
+#final  value 1372.749030 converged
+## creating 10 neurons
+fit10 <- nnet(SCORE ~ ., size=10, data=d, linout=T)
+#final  value 266.479561 
+fit37 <- nnet(SCORE ~ ., size=37, data=d, linout=T)
+#final  value 142.125685 
+#(B)------------------
+
+
+#by seeing above we can suggest (2) as it is getting saturated 
+#
